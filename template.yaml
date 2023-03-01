@@ -1,0 +1,43 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Serverless patterns - SNS to Lambda
+
+Resources:
+  # Define the SNS topic
+  MySnsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        - Protocol: lambda
+          Endpoint: !GetAtt HelloWorldFunction.Arn    
+
+  # Provide permission for SNS to invoke the Lambda function
+  HelloWorldPermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref HelloWorldFunction
+      Principal: sns.amazonaws.com
+
+  # Define the consumer Lambda function
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Timeout: 3
+      MemorySize: 128
+
+Outputs:
+  HelloWorldFunctionOutput:
+    Description: TopicConsumerFunction1 function name
+    Value: !Ref HelloWorldFunction
+  
+  SNStopicName:
+    Description: SNS topic name
+    Value: !GetAtt MySnsTopic.TopicName
+
+  SNStopicARN:
+    Description: SNS topic ARN
+    Value: !Ref MySnsTopic
