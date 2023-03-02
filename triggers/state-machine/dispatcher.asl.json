@@ -1,0 +1,25 @@
+{
+    "Comment": "A description of my state machine",
+    "StartAt": "MongoHandler",
+    "States": {
+      "MongoHandler": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::lambda:invoke",
+        "OutputPath": "$.Payload",
+        "Parameters": {
+          "FunctionName": "${MongoHandlerArn}"
+        },
+        "Next": "DynamoHandler"
+      },
+      "DynamoHandler": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::lambda:invoke",
+        "OutputPath": "$.Payload",
+        "Parameters": {
+          "Payload.$": "$",
+          "FunctionName": "${DynamoHandlerArn}"
+        },
+        "End": true
+      }
+    }
+  }

@@ -4,40 +4,98 @@ Description: Serverless patterns - SNS to Lambda
 
 Resources:
   # Define the SNS topic
-  MySnsTopic:
+  AQSNSTopic:
     Type: AWS::SNS::Topic
     Properties:
       Subscription:
         - Protocol: lambda
-          Endpoint: !GetAtt HelloWorldFunction.Arn    
+          Endpoint: !GetAtt SNSDispatchFunction.Arn    
 
   # Provide permission for SNS to invoke the Lambda function
-  HelloWorldPermission:
+  SNSDispatchFunctionPermission:
     Type: 'AWS::Lambda::Permission'
     Properties:
       Action: 'lambda:InvokeFunction'
-      FunctionName: !Ref HelloWorldFunction
+      FunctionName: !Ref SNSDispatchFunction
       Principal: sns.amazonaws.com
 
-  # Define the consumer Lambda function
-  HelloWorldFunction:
+  SNSDispatchRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action: sts:AssumeRole
+      Policies:
+      - PolicyName: StartExecution
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogStream
+              states:StartExecution
+              logs:CreateLogGroup
+              logs:PutLogEvents
+            Resources: "*"
+
+  SNSDispatchFunction:
     Type: AWS::Serverless::Function 
     Properties:
-      CodeUri: hello_world/
-      Handler: app.lambda_handler
+      CodeUri: triggers/sns_dispatch_handler
+      Handler: main.handler
       Runtime: python3.9
       Timeout: 3
-      MemorySize: 128
+      MemorySize: 1024
+      Role: !GetAtt SNSDispatchRole.Arn
+      Environment:
+        Variables:
+          STATE_MACHINE_ARN: !GetAtt DispatcherStateMachine.Arn
+      Policies:
+      - StepFunctionsStartExecutionPolicy:
+          StateMachineName: DispatcherStateMachine
+
+  MongoHandler:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: triggers/mongo_handler
+      Handler: main.handler
+      Runtime: python3.9
+      Timeout: 3
+      MemorySize: 1024
+
+  DynamoHandler:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: triggers/dynamo_handler
+      Handler: main.handler
+      Runtime: python3.9
+      Timeout: 3
+      MemorySize: 1024
+
+  DispatcherStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Type: Standard
+      DefinitionUri: triggers/state-machine/dispatcher.asl.json
+      DefinitionSubstitutions:
+        MongoHandlerArn: !GetAtt MongoHandler.Arn
+        DynamoHandlerArn: !GetAtt DynamoHandler.Arn
 
 Outputs:
   HelloWorldFunctionOutput:
-    Description: TopicConsumerFunction1 function name
-    Value: !Ref HelloWorldFunction
+    Description: SNSDispatchFunction function name
+    Value: !Ref SNSDispatchFunction
   
   SNStopicName:
     Description: SNS topic name
-    Value: !GetAtt MySnsTopic.TopicName
+    Value: !GetAtt AQSNSTopic.TopicName
 
   SNStopicARN:
     Description: SNS topic ARN
-    Value: !Ref MySnsTopic
+    Value: !Ref AQSNSTopic

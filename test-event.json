@@ -1,0 +1,26 @@
+{
+  "Records": [
+    {
+      "EventSource": "aws:sns",
+      "EventVersion": "1.0",
+      "EventSubscriptionArn": "arn:aws:sns:ap-south-1:489791930594:sam-integration-AQSNSTopic-4RkPn4QCQKiU:b75ae184-a212-4308-90ca-51872b61ebf6",
+      "Sns": {
+        "Type": "Notification",
+        "MessageId": "48ee374f-91e7-5d76-bd01-6b35a655b03d",
+        "TopicArn": "arn:aws:sns:ap-south-1:489791930594:sam-integration-AQSNSTopic-4RkPn4QCQKiU",
+        "Subject": null,
+        "Message": {
+          "dispatch_id": "a7600afd-f4bd-4554-9250-d0bcae3fe00e",
+          "status": "PAssed",
+          "owner_id": "Arun"
+        },
+        "Timestamp": "2023-03-02T05:34:42.814Z",
+        "SignatureVersion": "1",
+        "Signature": "jKQaP80WiYEGNlUkcpOt6b/XH99Aq4Y8e1M2c6BViGjJxUyC2VjAM6n8nGQxN3G7EzKERYYg9/CnqDXEkT46pjxAXosmMEiJ1glZOmgvqfw4V+rEjFeArU1hF0MzlDyo0RcHhIIKFHexIs5cIPogAOV1CksCJ8buYypWEFhfeWttiZgXkMXJvOM5Joih3sISiUKgkQaREWTtmEZ7i/pL+Pny6usjzSTKBjCQ6qrd8GQbfOopTRfOOThu6nz0yq4B9YG1/V+uqUgPE7lNJhj162ZZ9K7awmyLFoWnZGnHwJz7u2qjZnyTTpqIqxk7OmuyeHTVfXvHgz5GsxOwW4T3AA==",
+        "SigningCertUrl": "https://sns.ap-south-1.amazonaws.com/SimpleNotificationService-56e67fcb41f6fec09b0196692625d385.pem",
+        "UnsubscribeUrl": "https://sns.ap-south-1.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:ap-south-1:489791930594:sam-integration-AQSNSTopic-4RkPn4QCQKiU:b75ae184-a212-4308-90ca-51872b61ebf6",
+        "MessageAttributes": {}
+      }
+    }
+  ]
+}
