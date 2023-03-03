@@ -92,7 +92,8 @@ Resources:
             - logs:PutLogEvents
             Resource: '*'
   SNSDispatchFunction:
-    Type: AWS::Serverless::Function 
+    Type: AWS::Serverless::Function
+    DependsOn: DispatcherStateMachine
     Properties:
       FunctionName: SNS-Dispatcher-Handler
       CodeUri: triggers/sns_dispatch_handler
@@ -101,6 +102,9 @@ Resources:
       Timeout: 3
       MemorySize: 1024
       Role: !GetAtt SNSDispatcherRole.Arn
+      Policies:
+        StepFunctionsExecutionPolicy:
+          StateMachineName: !GetAtt DispatcherStateMachine.Name
       Environment:
         Variables:
           STATE_MACHINE_ARN: !GetAtt DispatcherStateMachine.Arn
