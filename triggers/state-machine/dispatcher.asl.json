@@ -16,7 +16,6 @@
         "Resource": "arn:aws:states:::lambda:invoke",
         "OutputPath": "$.Payload",
         "Parameters": {
-          "Payload.$": "$",
           "FunctionName": "${DynamoHandlerArn}"
         },
         "End": true

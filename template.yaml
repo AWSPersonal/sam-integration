@@ -3,23 +3,47 @@ Transform: AWS::Serverless-2016-10-31
 Description: Serverless patterns - SNS to Lambda
 
 Resources:
-  # Define the SNS topic
   AQSNSTopic:
     Type: AWS::SNS::Topic
     Properties:
+      TopicName: AQSNSTopic
+      DisplayName: AQ's SNS Topic
       Subscription:
         - Protocol: lambda
           Endpoint: !GetAtt SNSDispatchFunction.Arn    
-
-  # Provide permission for SNS to invoke the Lambda function
   SNSDispatchFunctionPermission:
     Type: 'AWS::Lambda::Permission'
     Properties:
       Action: 'lambda:InvokeFunction'
       FunctionName: !Ref SNSDispatchFunction
       Principal: sns.amazonaws.com
-
-  SNSDispatchRole:
+  SNSDispatcherRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: SNS-Dispatcher-Role
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action: 'sts:AssumeRole'
+      Policies:
+      - PolicyName: StartExecution
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Effect: Allow
+            Action:
+            - 'logs:CreateLogStream'
+            - 'states:StartExecution'
+            - 'logs:CreateLogGroup'
+            - 'logs:PutLogEvents'
+            - 'lambda:InvokeFunction'
+            Resource: '*'
+  HandlerInvokeRole:
     Type: AWS::IAM::Role
     Properties:
       Path: /
@@ -30,58 +54,81 @@ Resources:
           Principal:
             Service:
             - lambda.amazonaws.com
-          Action: sts:AssumeRole
+          Action: 'sts:AssumeRole'
       Policies:
-      - PolicyName: StartExecution
+      - PolicyName: InvokeLambda
         PolicyDocument:
           Version: "2012-10-17"
           Statement:
           - Effect: Allow
             Action:
             - logs:CreateLogStream
-              states:StartExecution
-              logs:CreateLogGroup
-              logs:PutLogEvents
-            Resources: "*"
-
+            - lambda:InvokeFunction
+            - logs:CreateLogGroup
+            - logs:PutLogEvents
+            Resource: '*'
+  DispatcherStateMachineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - states.amazonaws.com
+          Action: 'sts:AssumeRole'
+      Policies:
+      - PolicyName: InvokeLambda
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogStream
+            - lambda:InvokeFunction
+            - logs:CreateLogGroup
+            - logs:PutLogEvents
+            Resource: '*'
   SNSDispatchFunction:
     Type: AWS::Serverless::Function 
     Properties:
+      FunctionName: SNS-Dispatcher-Handler
       CodeUri: triggers/sns_dispatch_handler
       Handler: main.handler
       Runtime: python3.9
       Timeout: 3
       MemorySize: 1024
-      Role: !GetAtt SNSDispatchRole.Arn
+      Role: !GetAtt SNSDispatcherRole.Arn
       Environment:
         Variables:
           STATE_MACHINE_ARN: !GetAtt DispatcherStateMachine.Arn
-      Policies:
-      - StepFunctionsStartExecutionPolicy:
-          StateMachineName: DispatcherStateMachine
-
   MongoHandler:
     Type: AWS::Serverless::Function 
     Properties:
+      FunctionName: Mongo-Handler
       CodeUri: triggers/mongo_handler
       Handler: main.handler
       Runtime: python3.9
       Timeout: 3
       MemorySize: 1024
-
+      Role: !GetAtt HandlerInvokeRole.Arn
   DynamoHandler:
     Type: AWS::Serverless::Function 
     Properties:
+      FunctionName: Dynamo-Handler
       CodeUri: triggers/dynamo_handler
       Handler: main.handler
       Runtime: python3.9
       Timeout: 3
       MemorySize: 1024
-
   DispatcherStateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
-      Type: Standard
+      Name: Dispatcher-State-Machine
+      Type: STANDARD
+      Role: !GetAtt DispatcherStateMachineRole.Arn
       DefinitionUri: triggers/state-machine/dispatcher.asl.json
       DefinitionSubstitutions:
         MongoHandlerArn: !GetAtt MongoHandler.Arn
