@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Serverless patterns - SNS to Lambda
+
+Resources:
+  HandlerInvokeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action: 'sts:AssumeRole'
+      Policies:
+      - PolicyName: InvokeLambda
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogStream
+            - lambda:InvokeFunction
+            - logs:CreateLogGroup
+            - logs:PutLogEvents
+            Resource: '*'
+  MongoHandler:
+    Type: AWS::Serverless::Function 
+    Properties:
+      FunctionName: Mongo-Handler
+      CodeUri: triggers/mongo_handler
+      Handler: main.handler
+      Runtime: python3.9
+      Timeout: 3
+      MemorySize: 1024
+      Role: !GetAtt HandlerInvokeRole.Arn
+  DynamoHandler:
+    Type: AWS::Serverless::Function 
+    Properties:
+      FunctionName: Dynamo-Handler
+      CodeUri: triggers/dynamo_handler
+      Handler: main.handler
+      Runtime: python3.9
+      Timeout: 3
+      MemorySize: 1024

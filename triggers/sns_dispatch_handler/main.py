@@ -5,29 +5,24 @@ import os
 
 def handler(event, context):
     """Sample pure Lambda function"""
-    state_machine_arn = os.environ['STATE_MACHINE_ARN']
-    access_key = os.environ['ACCESS_KEY']
-    secret_key = os.environ['SECRET_KEY']
+    state_machine_arn = 'arn:aws:states:ap-south-1:123456789012:stateMachine:SNS-Dispatcher'
     input_data = {
         'key1': 'value1',
         'key2': 'value2'
     }
-    print("The ARN is ", state_machine_arn)
-    client = boto3.client(
-        'stepfunctions',
-        aws_access_key_id=f"{access_key}",
-        aws_secret_access_key=f"{secret_key}",)
     sns_messages = []
     records = event["Records"]
     if records:
         for record in records:
             print(record["Sns"]["Message"])
             sns_messages.append(record["Sns"]["Message"])
-
-    client.start_execution(
+    client = boto3.client(
+        'stepfunctions', use_ssl=False, verify=None, endpoint_url="http://localhost:8083")
+    response = client.start_execution(
         stateMachineArn=state_machine_arn,
         input=json.dumps(input_data)
     )
+    print(".........", response)
 
     return {
         "statusCode": 200,

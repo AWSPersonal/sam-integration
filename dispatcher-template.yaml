@@ -1,0 +1,65 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Serverless patterns - SNS to Lambda
+
+Resources:
+  AQSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: AQSNSTopic
+      DisplayName: AQ's SNS Topic
+      Subscription:
+        - Protocol: lambda
+          Endpoint: !GetAtt SNSDispatchFunction.Arn    
+  SNSDispatcherRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: SNS-Dispatcher-Role
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action: 'sts:AssumeRole'
+      Policies:
+      - PolicyName: StartExecution
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Effect: Allow
+            Action:
+            - 'logs:CreateLogStream'
+            - 'states:StartExecution'
+            - 'logs:CreateLogGroup'
+            - 'logs:PutLogEvents'
+            - 'lambda:InvokeFunction'
+            Resource: '*'
+  SNSDispatchFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: DispatcherStateMachine
+    Properties:
+      FunctionName: SNS-Dispatcher-Handler
+      CodeUri: triggers/sns_dispatch_handler
+      Handler: main.handler
+      Runtime: python3.9
+      Timeout: 50
+      MemorySize: 1024
+      Role: !GetAtt SNSDispatcherRole.Arn
+      Policies:
+        StepFunctionsExecutionPolicy:
+          StateMachineName: !GetAtt DispatcherStateMachine.Name
+      Environment:
+        Variables:
+          STATE_MACHINE_ARN: !GetAtt DispatcherStateMachine.Arn
+
+Outputs:  
+  SNStopicName:
+    Description: SNS topic name
+    Value: !GetAtt AQSNSTopic.TopicName
+
+  SNStopicARN:
+    Description: SNS topic ARN
+    Value: !Ref AQSNSTopic
