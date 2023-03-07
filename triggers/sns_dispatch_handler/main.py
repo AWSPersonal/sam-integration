@@ -16,13 +16,11 @@ def handler(event, context):
         for record in records:
             print(record["Sns"]["Message"])
             sns_messages.append(record["Sns"]["Message"])
-    client = boto3.client(
-        'stepfunctions', use_ssl=False, verify=None, endpoint_url="http://localhost:8083")
-    response = client.start_execution(
+    client = boto3.client('stepfunctions', endpoint_url="http://sns-stepfunctions:8083")
+    client.start_execution(
         stateMachineArn=state_machine_arn,
         input=json.dumps(input_data)
     )
-    print(".........", response)
 
     return {
         "statusCode": 200,
