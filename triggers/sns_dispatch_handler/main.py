@@ -16,12 +16,12 @@ def handler(event, context):
         for record in records:
             print(record["Sns"]["Message"])
             sns_messages.append(record["Sns"]["Message"])
-    client = boto3.client('stepfunctions', endpoint_url="http://sns-stepfunctions:8083")
+    client = boto3.client('stepfunctions', endpoint_url="http://{YOUR_PUBLIC_IP_ADDRESS}:8083")
     client.start_execution(
         stateMachineArn=state_machine_arn,
         input=json.dumps(input_data)
     )
-
+    print("VISIT THE STEP FUNCTIONS INITIATOR FOR FURTHER LOGS")
     return {
         "statusCode": 200,
         "body": sns_messages,
